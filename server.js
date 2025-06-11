@@ -22,17 +22,17 @@ app.post('/save-data', async (req, res) => {
         res.json({ success: true });
     } catch (error) {
         console.error('Error saving data:', error);
-        res.status(500).json({ success: false, error: 'Failed to save data' });
+        res.status(500).json({ error: 'Failed to save data' });
     }
 });
 
 app.get('/load-data', async (req, res) => {
     try {
         const filePath = path.join(dataDir, 'timetable-data.json');
-        try {
-            const data = await fs.readFile(filePath, 'utf8');
-            res.json(JSON.parse(data));
-        } catch (error) {
+        const data = await fs.readFile(filePath, 'utf8');
+        res.json(JSON.parse(data));
+    } catch (error) {
+        if (error.code === 'ENOENT') {
             // If file doesn't exist, return default data
             res.json({
                 activities: [],
@@ -48,10 +48,10 @@ app.get('/load-data', async (req, res) => {
                 streak: 0,
                 lastUpdated: new Date().toISOString()
             });
+        } else {
+            console.error('Error loading data:', error);
+            res.status(500).json({ error: 'Failed to load data' });
         }
-    } catch (error) {
-        console.error('Error loading data:', error);
-        res.status(500).json({ success: false, error: 'Failed to load data' });
     }
 });
 

@@ -1,7 +1,7 @@
 {
-  "name": "timetable-app",
+  "name": "daily-progress-tracker",
   "version": "1.0.0",
-  "description": "Daily Progress Tracker with file-based storage",
+  "description": "A web application for tracking daily activities and progress",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

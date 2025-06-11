@@ -1,1 +1,818 @@
- 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Progress Tracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #10b981;
+            --background: #f9fafb;
+            --card-bg: #ffffff;
+            --text: #1f2937;
+            --text-light: #6b7280;
+            --border: #e5e7eb;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        [data-theme="dark"] {
+            --primary: #818cf8;
+            --primary-dark: #6366f1;
+            --secondary: #34d399;
+            --background: #111827;
+            --card-bg: #1f2937;
+            --text: #f9fafb;
+            --text-light: #9ca3af;
+            --border: #374151;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            line-height: 1.5;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: var(--card-bg);
+            border-radius: 1rem;
+            box-shadow: var(--shadow);
+        }
+
+        .theme-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .theme-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--text-light);
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            background: var(--card-bg);
+            padding: 1rem;
+            border-radius: 1rem;
+            box-shadow: var(--shadow);
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            background: none;
+            color: var(--text-light);
+            cursor: pointer;
+            border-radius: 0.5rem;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .tab:hover {
+            color: var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .tab.active {
+            color: var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .section {
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow);
+        }
+
+        .card h2 {
+            color: var(--text);
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-light);
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            background: var(--background);
+            color: var(--text);
+            font-size: 1rem;
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.3s;
+        }
+
+        .btn:hover {
+            background: var(--primary-dark);
+        }
+
+        .activity-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .progress-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .progress-item {
+            text-align: center;
+            padding: 1rem;
+            background: var(--background);
+            border-radius: 0.5rem;
+        }
+
+        .progress-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .progress-label {
+            color: var(--text-light);
+            font-size: 0.875rem;
+        }
+
+        .wish-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .wish-item.completed {
+            text-decoration: line-through;
+            color: var(--text-light);
+        }
+
+        .timer-display {
+            font-size: 3rem;
+            font-weight: 700;
+            text-align: center;
+            margin: 2rem 0;
+            color: var(--primary);
+        }
+
+        .timer-controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 1rem 2rem;
+            background: var(--card-bg);
+            color: var(--text);
+            border-radius: 0.5rem;
+            box-shadow: var(--shadow);
+            transform: translateY(100%);
+            opacity: 0;
+            transition: all 0.3s;
+        }
+
+        .notification.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .notification.error {
+            background: #ef4444;
+            color: white;
+        }
+
+        .notification.success {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .quote-card {
+            text-align: center;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .quote-text {
+            font-size: 1.25rem;
+            font-style: italic;
+            color: var(--text);
+            margin-bottom: 1rem;
+        }
+
+        .quote-author {
+            color: var(--text-light);
+            font-size: 0.875rem;
+        }
+
+        .streak-counter {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--secondary);
+            font-weight: 600;
+        }
+
+        .streak-counter::before {
+            content: "🔥";
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .tabs {
+                flex-wrap: wrap;
+            }
+
+            .tab {
+                flex: 1 1 auto;
+                text-align: center;
+            }
+
+            .progress-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Daily Progress Tracker</h1>
+            <div class="header-controls">
+                <label class="theme-switch">
+                    <input type="checkbox" id="theme-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </header>
+
+        <div class="quote-card">
+            <p id="quote-text" class="quote-text">Loading quote...</p>
+            <p id="quote-author" class="quote-author"></p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="schedule">Schedule</button>
+            <button class="tab" data-tab="progress">Progress</button>
+            <button class="tab" data-tab="wishes">Wishes</button>
+            <button class="tab" data-tab="timer">Focus Timer</button>
+        </div>
+
+        <section id="schedule" class="section active">
+            <div class="card">
+                <h2>Today's Schedule</h2>
+                <form id="activity-form">
+                    <div class="form-group">
+                        <label for="activity-time">Time</label>
+                        <input type="time" id="activity-time" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="activity-name">Activity</label>
+                        <input type="text" id="activity-name" placeholder="Enter activity name" required>
+                    </div>
+                    <button type="submit" class="btn">Add Activity</button>
+                </form>
+                <ul id="activity-list" class="activity-list"></ul>
+            </div>
+        </section>
+
+        <section id="progress" class="section">
+            <div class="card">
+                <h2>Progress Tracking</h2>
+                <form id="progress-form">
+                    <div class="form-group">
+                        <label for="progress-type">Category</label>
+                        <select id="progress-type" required>
+                            <option value="studyHours">Study Hours</option>
+                            <option value="leetcodeProblems">LeetCode Problems</option>
+                            <option value="jobApplications">Job Applications</option>
+                            <option value="exerciseMinutes">Exercise Minutes</option>
+                            <option value="meditationMinutes">Meditation Minutes</option>
+                            <option value="phoneUsage">Phone Usage (minutes)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="progress-value">Value</label>
+                        <input type="number" id="progress-value" min="0" required>
+                    </div>
+                    <button type="submit" class="btn">Update Progress</button>
+                </form>
+                <div class="progress-grid">
+                    <div class="progress-item">
+                        <div id="study-hours" class="progress-value">0</div>
+                        <div class="progress-label">Study Hours</div>
+                    </div>
+                    <div class="progress-item">
+                        <div id="leetcode-problems" class="progress-value">0</div>
+                        <div class="progress-label">LeetCode Problems</div>
+                    </div>
+                    <div class="progress-item">
+                        <div id="job-applications" class="progress-value">0</div>
+                        <div class="progress-label">Job Applications</div>
+                    </div>
+                    <div class="progress-item">
+                        <div id="exercise-minutes" class="progress-value">0</div>
+                        <div class="progress-label">Exercise Minutes</div>
+                    </div>
+                    <div class="progress-item">
+                        <div id="meditation-minutes" class="progress-value">0</div>
+                        <div class="progress-label">Meditation Minutes</div>
+                    </div>
+                    <div class="progress-item">
+                        <div id="phone-usage" class="progress-value">0</div>
+                        <div class="progress-label">Phone Usage</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="wishes" class="section">
+            <div class="card">
+                <h2>Morning Wishes</h2>
+                <form id="wish-form">
+                    <div class="form-group">
+                        <label for="wish-text">New Wish</label>
+                        <input type="text" id="wish-text" placeholder="Enter your wish" required>
+                    </div>
+                    <button type="submit" class="btn">Add Wish</button>
+                </form>
+                <ul id="wish-list" class="wish-list"></ul>
+            </div>
+        </section>
+
+        <section id="timer" class="section">
+            <div class="card">
+                <h2>Focus Timer</h2>
+                <div id="timer-display" class="timer-display">25:00</div>
+                <div class="timer-controls">
+                    <button id="start-timer" class="btn">Start</button>
+                    <button id="pause-timer" class="btn">Pause</button>
+                    <button id="reset-timer" class="btn">Reset</button>
+                </div>
+            </div>
+        </section>
+
+        <div class="card">
+            <h2>Data Management</h2>
+            <div class="form-group">
+                <button onclick="exportData()" class="btn">Export Data</button>
+                <input type="file" id="import-file" accept=".json" onchange="importData(event)" style="display: none;">
+                <button onclick="document.getElementById('import-file').click()" class="btn">Import Data</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="notification" class="notification"></div>
+
+    <script>
+        // State management
+        let activities = [];
+        let progress = {
+            studyHours: 0,
+            leetcodeProblems: 0,
+            jobApplications: 0,
+            exerciseMinutes: 0,
+            meditationMinutes: 0,
+            phoneUsage: 0
+        };
+        let wishes = [];
+        let streak = 0;
+        let timerInterval = null;
+        let timerSeconds = 25 * 60;
+
+        // DOM Elements
+        const themeToggle = document.getElementById('theme-toggle');
+        const tabs = document.querySelectorAll('.tab');
+        const sections = document.querySelectorAll('.section');
+        const quoteText = document.getElementById('quote-text');
+        const quoteAuthor = document.getElementById('quote-author');
+        const streakCount = document.getElementById('streak-count');
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            loadQuote();
+            setupEventListeners();
+            updateUI();
+        });
+
+        function setupEventListeners() {
+            // Theme toggle
+            themeToggle.addEventListener('change', () => {
+                document.body.setAttribute('data-theme', themeToggle.checked ? 'dark' : 'light');
+                localStorage.setItem('theme', themeToggle.checked ? 'dark' : 'light');
+            });
+
+            // Tab switching
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabName = tab.getAttribute('data-tab');
+                    switchTab(tabName);
+                });
+            });
+
+            // Forms
+            document.getElementById('activity-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                addActivity();
+            });
+
+            document.getElementById('progress-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                updateProgress();
+            });
+
+            document.getElementById('wish-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                addWish();
+            });
+
+            // Timer controls
+            document.getElementById('start-timer').addEventListener('click', startTimer);
+            document.getElementById('pause-timer').addEventListener('click', pauseTimer);
+            document.getElementById('reset-timer').addEventListener('click', resetTimer);
+        }
+
+        function switchTab(tabName) {
+            tabs.forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.getAttribute('data-tab') === tabName) {
+                    tab.classList.add('active');
+                }
+            });
+
+            sections.forEach(section => {
+                section.classList.remove('active');
+                if (section.id === tabName) {
+                    section.classList.add('active');
+                }
+            });
+        }
+
+        async function loadQuote() {
+            try {
+                const response = await fetch('https://api.quotable.io/random');
+                const data = await response.json();
+                quoteText.textContent = data.content;
+                quoteAuthor.textContent = `- ${data.author}`;
+            } catch (error) {
+                quoteText.textContent = "The only way to do great work is to love what you do.";
+                quoteAuthor.textContent = "- Steve Jobs";
+            }
+        }
+
+        function addActivity() {
+            const time = document.getElementById('activity-time').value;
+            const name = document.getElementById('activity-name').value;
+
+            if (!time || !name) {
+                showNotification('Please fill in all fields', 'error');
+                return;
+            }
+
+            activities.push({ time, name });
+            document.getElementById('activity-form').reset();
+            updateUI();
+            saveData();
+            showNotification('Activity added successfully!');
+        }
+
+        function updateProgress() {
+            const type = document.getElementById('progress-type').value;
+            const value = parseInt(document.getElementById('progress-value').value);
+
+            if (isNaN(value)) {
+                showNotification('Please enter a valid number', 'error');
+                return;
+            }
+
+            progress[type] = value;
+            document.getElementById('progress-form').reset();
+            updateUI();
+            saveData();
+            showNotification('Progress updated successfully!');
+        }
+
+        function addWish() {
+            const wishText = document.getElementById('wish-text').value;
+
+            if (!wishText) {
+                showNotification('Please enter a wish', 'error');
+                return;
+            }
+
+            wishes.push({ text: wishText, completed: false });
+            document.getElementById('wish-form').reset();
+            updateUI();
+            saveData();
+            showNotification('Wish added successfully!');
+        }
+
+        function toggleWish(index) {
+            wishes[index].completed = !wishes[index].completed;
+            updateUI();
+            saveData();
+        }
+
+        function startTimer() {
+            if (timerInterval) return;
+            timerInterval = setInterval(updateTimer, 1000);
+            showNotification('Timer started!');
+        }
+
+        function pauseTimer() {
+            if (!timerInterval) return;
+            clearInterval(timerInterval);
+            timerInterval = null;
+            showNotification('Timer paused!');
+        }
+
+        function resetTimer() {
+            pauseTimer();
+            timerSeconds = 25 * 60;
+            updateTimerDisplay();
+            showNotification('Timer reset!');
+        }
+
+        function updateTimer() {
+            if (timerSeconds <= 0) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+                showNotification('Time is up!', 'success');
+                return;
+            }
+            timerSeconds--;
+            updateTimerDisplay();
+        }
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timerSeconds / 60);
+            const seconds = timerSeconds % 60;
+            document.getElementById('timer-display').textContent = 
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function updateUI() {
+            // Update activities
+            const activityList = document.getElementById('activity-list');
+            activityList.innerHTML = activities
+                .sort((a, b) => a.time.localeCompare(b.time))
+                .map(activity => `
+                    <li class="activity-item">
+                        <span>${activity.time}</span>
+                        <span>${activity.name}</span>
+                    </li>
+                `).join('');
+
+            // Update progress
+            Object.entries(progress).forEach(([key, value]) => {
+                const element = document.getElementById(key.replace(/([A-Z])/g, '-$1').toLowerCase());
+                if (element) element.textContent = value;
+            });
+
+            // Update wishes
+            const wishList = document.getElementById('wish-list');
+            wishList.innerHTML = wishes.map((wish, index) => `
+                <li class="activity-item">
+                    <span class="${wish.completed ? 'completed' : ''}">${wish.text}</span>
+                    <button class="btn" onclick="toggleWish(${index})">
+                        ${wish.completed ? 'Undo' : 'Complete'}
+                    </button>
+                </li>
+            `).join('');
+
+            // Update streak
+            streakCount.textContent = streak;
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification show ${type}`;
+            setTimeout(() => {
+                notification.className = 'notification';
+            }, 3000);
+        }
+
+        async function saveData() {
+            const data = {
+                activities,
+                progress,
+                wishes,
+                streak,
+                lastUpdated: new Date().toISOString()
+            };
+            
+            try {
+                const response = await fetch('/save-data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to save data');
+                }
+            } catch (error) {
+                console.error('Error saving data:', error);
+                showNotification('Error saving data!', 'error');
+            }
+        }
+
+        async function loadData() {
+            try {
+                const response = await fetch('/load-data');
+                if (!response.ok) {
+                    throw new Error('Failed to load data');
+                }
+                
+                const data = await response.json();
+                activities = data.activities || [];
+                progress = data.progress || {
+                    studyHours: 0,
+                    leetcodeProblems: 0,
+                    jobApplications: 0,
+                    exerciseMinutes: 0,
+                    meditationMinutes: 0,
+                    phoneUsage: 0
+                };
+                wishes = data.wishes || [];
+                streak = data.streak || 0;
+                
+                updateUI();
+            } catch (error) {
+                console.error('Error loading data:', error);
+                showNotification('Error loading data!', 'error');
+            }
+        }
+
+        function exportData() {
+            const data = {
+                activities,
+                progress,
+                wishes,
+                streak,
+                lastUpdated: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `timetable-data-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showNotification('Data exported successfully!');
+        }
+
+        async function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            try {
+                const text = await file.text();
+                const data = JSON.parse(text);
+                
+                activities = data.activities || [];
+                progress = data.progress || {
+                    studyHours: 0,
+                    leetcodeProblems: 0,
+                    jobApplications: 0,
+                    exerciseMinutes: 0,
+                    meditationMinutes: 0,
+                    phoneUsage: 0
+                };
+                wishes = data.wishes || [];
+                streak = data.streak || 0;
+                
+                updateUI();
+                await saveData();
+                showNotification('Data imported successfully!');
+            } catch (error) {
+                console.error('Error importing data:', error);
+                showNotification('Error importing data!', 'error');
+            }
+        }
+
+        // Load saved theme
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+            themeToggle.checked = savedTheme === 'dark';
+            document.body.setAttribute('data-theme', savedTheme);
+        }
+    </script>
+</body>
+</html> 
