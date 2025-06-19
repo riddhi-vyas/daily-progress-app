@@ -186,6 +186,27 @@
             font-size: 1rem;
         }
 
+        .form-group .input-row {
+            display: flex;
+            gap: 1rem;
+            align-items: end;
+        }
+
+        .form-group .input-row > div {
+            flex: 1;
+        }
+
+        .form-group .input-row label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-light);
+            font-size: 0.875rem;
+        }
+
+        .form-group .input-row input {
+            width: 100%;
+        }
+
         .btn {
             background: var(--primary);
             color: white;
@@ -206,11 +227,78 @@
             justify-content: space-between;
             align-items: center;
             padding: 1rem;
-            border-bottom: 1px solid var(--border);
+            margin-bottom: 0.5rem;
+            background: var(--background);
+            border-radius: 0.5rem;
+            border: 1px solid var(--border);
+            transition: all 0.3s;
         }
 
-        .activity-item:last-child {
-            border-bottom: none;
+        .activity-item.completed {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: var(--secondary);
+        }
+
+        .activity-info {
+            flex: 1;
+        }
+
+        .activity-time {
+            display: block;
+            color: var(--text-light);
+            font-size: 0.875rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .activity-name {
+            display: block;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .activity-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .actual-time-input {
+            padding: 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: 0.25rem;
+            background: var(--background);
+            color: var(--text);
+            font-size: 0.875rem;
+        }
+
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        .completed-badge {
+            color: var(--secondary);
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+
+        .time-diff {
+            color: var(--primary);
+            font-weight: 500;
+            font-style: italic;
+        }
+
+        .wish-list {
+            list-style: none;
+        }
+
+        .wish-list .activity-item {
+            justify-content: space-between;
+        }
+
+        .completed {
+            text-decoration: line-through;
+            opacity: 0.7;
         }
 
         .progress-grid {
@@ -372,8 +460,12 @@
                 <h2>Today's Schedule</h2>
                 <form id="activity-form">
                     <div class="form-group">
-                        <label for="activity-time">Time</label>
-                        <input type="time" id="activity-time" required>
+                        <label for="activity-start-time">Start Time</label>
+                        <input type="time" id="activity-start-time" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="activity-expected-end-time">Expected End Time</label>
+                        <input type="time" id="activity-expected-end-time" required>
                     </div>
                     <div class="form-group">
                         <label for="activity-name">Activity</label>
@@ -391,7 +483,7 @@
                 <form id="progress-form">
                     <div class="form-group">
                         <label for="progress-type">Category</label>
-                        <select id="progress-type" required>
+                        <select id="progress-type" required onchange="toggleStudyHoursInput()">
                             <option value="studyHours">Study Hours</option>
                             <option value="leetcodeProblems">LeetCode Problems</option>
                             <option value="jobApplications">Job Applications</option>
@@ -400,9 +492,22 @@
                             <option value="phoneUsage">Phone Usage (minutes)</option>
                         </select>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" id="study-hours-input-group" style="display: none;">
+                        <label>Study Time</label>
+                        <div class="input-row">
+                            <div>
+                                <label for="study-hours-input">Hours</label>
+                                <input type="number" id="study-hours-input" min="0" step="1" placeholder="0">
+                            </div>
+                            <div>
+                                <label for="study-minutes-input">Minutes</label>
+                                <input type="number" id="study-minutes-input" min="0" max="59" placeholder="0">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group" id="regular-input-group">
                         <label for="progress-value">Value</label>
-                        <input type="number" id="progress-value" min="0" required>
+                        <input type="number" id="progress-value" min="0" step="1">
                     </div>
                     <button type="submit" class="btn">Update Progress</button>
                 </form>
@@ -503,6 +608,10 @@
             loadQuote();
             setupEventListeners();
             updateUI();
+            // Ensure Study Hours input is properly initialized
+            setTimeout(() => {
+                toggleStudyHoursInput();
+            }, 100);
         });
 
         function setupEventListeners() {
@@ -528,6 +637,7 @@
 
             document.getElementById('progress-form').addEventListener('submit', (e) => {
                 e.preventDefault();
+                console.log('Progress form submitted');
                 updateProgress();
             });
 
@@ -571,15 +681,22 @@
         }
 
         function addActivity() {
-            const time = document.getElementById('activity-time').value;
+            const startTime = document.getElementById('activity-start-time').value;
+            const expectedEndTime = document.getElementById('activity-expected-end-time').value;
             const name = document.getElementById('activity-name').value;
 
-            if (!time || !name) {
+            if (!startTime || !expectedEndTime || !name) {
                 showNotification('Please fill in all fields', 'error');
                 return;
             }
 
-            activities.push({ time, name });
+            activities.push({ 
+                startTime, 
+                expectedEndTime, 
+                actualEndTime: null, 
+                name, 
+                completed: false 
+            });
             document.getElementById('activity-form').reset();
             updateUI();
             saveData();
@@ -588,18 +705,139 @@
 
         function updateProgress() {
             const type = document.getElementById('progress-type').value;
-            const value = parseInt(document.getElementById('progress-value').value);
+            let value;
 
-            if (isNaN(value)) {
-                showNotification('Please enter a valid number', 'error');
-                return;
+            console.log('updateProgress called, type:', type);
+
+            if (type === 'studyHours') {
+                const hoursInput = document.getElementById('study-hours-input');
+                const minutesInput = document.getElementById('study-minutes-input');
+                
+                console.log('Study hours inputs found:', { hoursInput, minutesInput });
+                console.log('Study hours input values:', { 
+                    hoursValue: hoursInput.value, 
+                    minutesValue: minutesInput.value 
+                });
+                
+                const hours = parseInt(hoursInput.value) || 0;
+                const minutes = parseInt(minutesInput.value) || 0;
+                
+                console.log('Study hours parsed:', { hours, minutes });
+                
+                if (hours === 0 && minutes === 0) {
+                    showNotification('Please enter study time', 'error');
+                    return;
+                }
+                
+                // Convert minutes to decimal hours
+                value = hours + (minutes / 60);
+                console.log('Calculated value:', value);
+                
+                // Add to existing study hours
+                progress[type] = (progress[type] || 0) + value;
+                console.log('Total study hours after adding:', progress[type]);
+                
+                // Clear study hours inputs
+                hoursInput.value = '';
+                minutesInput.value = '';
+            } else {
+                const inputValue = document.getElementById('progress-value').value;
+                value = parseInt(inputValue);
+                console.log('Regular input value:', value);
+                
+                // Validate input for other categories
+                if (isNaN(value) || inputValue.trim() === '') {
+                    showNotification('Please enter a valid number', 'error');
+                    return;
+                }
+                
+                // Add to existing value for all categories (accumulate)
+                progress[type] = (progress[type] || 0) + value;
+                console.log(`Total ${type} after adding:`, progress[type]);
+                
+                // Reset regular form
+                document.getElementById('progress-form').reset();
             }
-
-            progress[type] = value;
-            document.getElementById('progress-form').reset();
+            
+            console.log('About to update UI and save data');
             updateUI();
             saveData();
-            showNotification('Progress updated successfully!');
+            
+            if (type === 'studyHours') {
+                showNotification(`Added ${value.toFixed(1)} hours. Total: ${progress[type].toFixed(1)} hours`);
+            } else {
+                showNotification(`Added ${value}. Total: ${progress[type]}`);
+            }
+        }
+
+        function completeActivity(index) {
+            const actualEndTime = document.getElementById(`actual-time-${index}`).value;
+            
+            if (!actualEndTime) {
+                showNotification('Please enter actual end time', 'error');
+                return;
+            }
+            
+            activities[index].actualEndTime = actualEndTime;
+            activities[index].completed = true;
+            
+            // Calculate time difference
+            const timeDiff = calculateTimeDifference(
+                activities[index].startTime, 
+                activities[index].expectedEndTime, 
+                actualEndTime
+            );
+            activities[index].timeDifference = timeDiff;
+            
+            updateUI();
+            saveData();
+            showNotification(`Activity completed! ${timeDiff}`);
+        }
+
+        function calculateTimeDifference(startTime, expectedEndTime, actualEndTime) {
+            const start = new Date(`2000-01-01T${startTime}`);
+            const expected = new Date(`2000-01-01T${expectedEndTime}`);
+            const actual = new Date(`2000-01-01T${actualEndTime}`);
+            
+            const expectedDuration = (expected - start) / (1000 * 60); // minutes
+            const actualDuration = (actual - start) / (1000 * 60); // minutes
+            const difference = actualDuration - expectedDuration;
+            
+            if (difference === 0) {
+                return "Perfect timing!";
+            } else if (difference > 0) {
+                const hours = Math.floor(difference / 60);
+                const minutes = Math.round(difference % 60);
+                return `Over by ${hours > 0 ? hours + 'h ' : ''}${minutes}m`;
+            } else {
+                const hours = Math.floor(Math.abs(difference) / 60);
+                const minutes = Math.round(Math.abs(difference) % 60);
+                return `Under by ${hours > 0 ? hours + 'h ' : ''}${minutes}m`;
+            }
+        }
+
+        function undoActivity(index) {
+            activities[index].actualEndTime = null;
+            activities[index].completed = false;
+            activities[index].timeDifference = null;
+            
+            updateUI();
+            saveData();
+            showNotification('Activity undone!');
+        }
+
+        function toggleStudyHoursInput() {
+            const type = document.getElementById('progress-type').value;
+            const studyHoursGroup = document.getElementById('study-hours-input-group');
+            const regularGroup = document.getElementById('regular-input-group');
+            
+            if (type === 'studyHours') {
+                studyHoursGroup.style.display = 'block';
+                regularGroup.style.display = 'none';
+            } else {
+                studyHoursGroup.style.display = 'none';
+                regularGroup.style.display = 'block';
+            }
         }
 
         function addWish() {
@@ -665,18 +903,40 @@
             // Update activities
             const activityList = document.getElementById('activity-list');
             activityList.innerHTML = activities
-                .sort((a, b) => a.time.localeCompare(b.time))
-                .map(activity => `
-                    <li class="activity-item">
-                        <span>${activity.time}</span>
-                        <span>${activity.name}</span>
+                .sort((a, b) => a.startTime.localeCompare(b.startTime))
+                .map((activity, index) => `
+                    <li class="activity-item ${activity.completed ? 'completed' : ''}">
+                        <div class="activity-info">
+                            <span class="activity-time">
+                                ${activity.startTime} - ${activity.expectedEndTime}
+                                ${activity.actualEndTime ? `<br><small>Actual: ${activity.actualEndTime}</small>` : ''}
+                                ${activity.timeDifference ? `<br><small class="time-diff">${activity.timeDifference}</small>` : ''}
+                            </span>
+                            <span class="activity-name">${activity.name}</span>
+                        </div>
+                        <div class="activity-actions">
+                            ${!activity.completed ? `
+                                <input type="time" id="actual-time-${index}" placeholder="Actual end time" class="actual-time-input">
+                                <button class="btn btn-small" onclick="completeActivity(${index})">Complete</button>
+                            ` : `
+                                <span class="completed-badge">✓ Completed</span>
+                                <button class="btn btn-small" onclick="undoActivity(${index})">Undo</button>
+                            `}
+                        </div>
                     </li>
                 `).join('');
 
             // Update progress
             Object.entries(progress).forEach(([key, value]) => {
                 const element = document.getElementById(key.replace(/([A-Z])/g, '-$1').toLowerCase());
-                if (element) element.textContent = value;
+                if (element) {
+                    // Display study hours with decimal places
+                    if (key === 'studyHours') {
+                        element.textContent = value.toFixed(1);
+                    } else {
+                        element.textContent = value;
+                    }
+                }
             });
 
             // Update wishes
@@ -751,9 +1011,13 @@
                 streak = data.streak || 0;
                 
                 updateUI();
+                // Initialize Study Hours input display after data is loaded
+                toggleStudyHoursInput();
             } catch (error) {
                 console.error('Error loading data:', error);
                 showNotification('Error loading data!', 'error');
+                // Still initialize Study Hours input even if data loading fails
+                toggleStudyHoursInput();
             }
         }
 
